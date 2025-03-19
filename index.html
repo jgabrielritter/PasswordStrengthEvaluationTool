@@ -90,6 +90,56 @@
         .checkbox-container input {
             margin-right: 8px;
         }
+        .generator-container {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+        .generator-options {
+            margin-bottom: 15px;
+        }
+        .generator-options label {
+            margin-right: 15px;
+            display: inline-flex;
+            align-items: center;
+        }
+        .generator-options input[type="checkbox"] {
+            margin-right: 5px;
+        }
+        .generator-options input[type="number"] {
+            width: 60px;
+            padding: 5px;
+            margin-left: 5px;
+        }
+        .button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #45a049;
+        }
+        .copy-button {
+            background-color: #2196F3;
+            margin-left: 10px;
+        }
+        .copy-button:hover {
+            background-color: #0b7dda;
+        }
+        .success-message {
+            color: #4CAF50;
+            margin-left: 10px;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -134,6 +184,37 @@
                 <span class="criteria-icon" id="common-check"></span>
                 <span>Not a common password</span>
             </div>
+        </div>
+        
+        <div class="generator-container">
+            <h3>Password Generator</h3>
+            <div class="generator-options">
+                <label>
+                    <input type="checkbox" id="uppercase" checked>
+                    Uppercase
+                </label>
+                <label>
+                    <input type="checkbox" id="lowercase" checked>
+                    Lowercase
+                </label>
+                <label>
+                    <input type="checkbox" id="numbers" checked>
+                    Numbers
+                </label>
+                <label>
+                    <input type="checkbox" id="special" checked>
+                    Special Characters
+                </label>
+                <div style="margin-top: 10px;">
+                    <label>
+                        Length:
+                        <input type="number" id="length" min="8" max="64" value="16">
+                    </label>
+                </div>
+            </div>
+            <button id="generate-password" class="button">Generate Password</button>
+            <button id="copy-password" class="button copy-button">Copy to Clipboard</button>
+            <span id="copy-success" class="success-message">Password copied!</span>
         </div>
     </div>
 
@@ -250,6 +331,106 @@
             } else {
                 element.className = 'criteria-icon fail';
             }
+        }
+
+        // Password Generator Functions
+        document.getElementById('generate-password').addEventListener('click', generatePassword);
+        document.getElementById('copy-password').addEventListener('click', copyPasswordToClipboard);
+
+        function generatePassword() {
+            // Get user preferences
+            const useUppercase = document.getElementById('uppercase').checked;
+            const useLowercase = document.getElementById('lowercase').checked;
+            const useNumbers = document.getElementById('numbers').checked;
+            const useSpecial = document.getElementById('special').checked;
+            let length = parseInt(document.getElementById('length').value);
+            
+            // Validate input
+            if (length < 8) length = 8;
+            if (length > 64) length = 64;
+            
+            // Ensure at least one character type is selected
+            if (!useUppercase && !useLowercase && !useNumbers && !useSpecial) {
+                document.getElementById('feedback').textContent = 'Please select at least one character type.';
+                return;
+            }
+            
+            // Define character sets
+            const uppercaseChars = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // Exclude similar looking characters like I/O
+            const lowercaseChars = 'abcdefghijkmnopqrstuvwxyz'; // Exclude l
+            const numberChars = '23456789'; // Exclude 0/1
+            const specialChars = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+            
+            // Combine selected character sets
+            let allChars = '';
+            if (useUppercase) allChars += uppercaseChars;
+            if (useLowercase) allChars += lowercaseChars;
+            if (useNumbers) allChars += numberChars;
+            if (useSpecial) allChars += specialChars;
+            
+            // Generate the password
+            let password = '';
+            
+            // Ensure at least one character from each selected type
+            if (useUppercase)
+                password += uppercaseChars.charAt(Math.floor(Math.random() * uppercaseChars.length));
+                
+            if (useLowercase)
+                password += lowercaseChars.charAt(Math.floor(Math.random() * lowercaseChars.length));
+                
+            if (useNumbers)
+                password += numberChars.charAt(Math.floor(Math.random() * numberChars.length));
+                
+            if (useSpecial)
+                password += specialChars.charAt(Math.floor(Math.random() * specialChars.length));
+            
+            // Fill remaining length with random characters from all selected sets
+            const remainingLength = length - password.length;
+            for (let i = 0; i < remainingLength; i++) {
+                const randomIndex = Math.floor(Math.random() * allChars.length);
+                password += allChars.charAt(randomIndex);
+            }
+            
+            // Shuffle the password to avoid predictable patterns
+            password = shuffleString(password);
+            
+            // Set the generated password in the input field
+            document.getElementById('password').value = password;
+            
+            // Trigger the strength check
+            checkPasswordStrength();
+        }
+
+        function shuffleString(str) {
+            const array = str.split('');
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]]; // Swap elements
+            }
+            return array.join('');
+        }
+
+        function copyPasswordToClipboard() {
+            const passwordField = document.getElementById('password');
+            const successMessage = document.getElementById('copy-success');
+            
+            // Check if there's a password to copy
+            if (!passwordField.value) {
+                document.getElementById('feedback').textContent = 'Please generate a password first.';
+                return;
+            }
+            
+            // Copy to clipboard
+            passwordField.select();
+            document.execCommand('copy');
+            
+            // Show success message
+            successMessage.style.display = 'inline';
+            
+            // Hide success message after 2 seconds
+            setTimeout(() => {
+                successMessage.style.display = 'none';
+            }, 2000);
         }
     </script>
 </body>
